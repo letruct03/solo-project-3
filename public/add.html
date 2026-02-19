@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add Movie - Movie Collection Manager</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="header-brand">
+        <h1>➕ Add New Movie</h1>
+      </div>
+      <nav>
+        <a href="index.html" class="btn btn-secondary">← Back to Collection</a>
+      </nav>
+    </header>
+
+    <div id="alertContainer"></div>
+
+    <form id="addMovieForm" class="movie-form">
+      <div class="form-group">
+        <label for="title">Title <span class="required">*</span></label>
+        <input type="text" id="title" name="title" required placeholder="e.g. Inception">
+      </div>
+
+      <div class="form-group">
+        <label for="director">Director</label>
+        <input type="text" id="director" name="director" placeholder="e.g. Christopher Nolan">
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="releaseYear">Release Year</label>
+          <input type="number" id="releaseYear" name="releaseYear" min="1888" max="2030" placeholder="e.g. 2010">
+        </div>
+        <div class="form-group">
+          <label for="runtime">Runtime (minutes)</label>
+          <input type="number" id="runtime" name="runtime" min="1" placeholder="e.g. 148">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="genre">Genre</label>
+        <input type="text" id="genre" name="genre" placeholder="e.g. Sci-Fi, Drama, Action">
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="watchStatus">Watch Status</label>
+          <select id="watchStatus" name="watchStatus">
+            <option value="Want to Watch">Want to Watch</option>
+            <option value="Watching">Watching</option>
+            <option value="Completed">Completed</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="personalRating">Your Rating (0–10)</label>
+          <input type="number" id="personalRating" name="personalRating" step="0.1" min="0" max="10" placeholder="e.g. 8.5">
+        </div>
+      </div>
+
+      <!-- Image URL field -->
+      <div class="form-group">
+        <label for="imageUrl">Poster Image URL</label>
+        <input type="url" id="imageUrl" name="imageUrl" placeholder="https://…/poster.jpg">
+        <small class="field-hint">Paste a direct image link (e.g. from TMDB). Leave blank for a placeholder.</small>
+        <div id="imagePreview" class="image-preview" style="display:none;">
+          <img id="previewImg" src="" alt="Preview" onerror="this.parentElement.style.display='none'">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="reviewNotes">Review / Notes</label>
+        <textarea id="reviewNotes" name="reviewNotes" rows="4" placeholder="Your thoughts about the movie…"></textarea>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" id="submitBtn">Add Movie</button>
+        <a href="index.html" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    // Live image preview
+    document.getElementById('imageUrl').addEventListener('input', function () {
+      const preview = document.getElementById('imagePreview');
+      const img = document.getElementById('previewImg');
+      if (this.value.trim()) {
+        img.src = this.value.trim();
+        preview.style.display = 'block';
+      } else {
+        preview.style.display = 'none';
+      }
+    });
+
+    document.getElementById('addMovieForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.textContent = 'Adding…';
+
+      const data = {
+        title:          document.getElementById('title').value.trim(),
+        director:       document.getElementById('director').value.trim(),
+        releaseYear:    document.getElementById('releaseYear').value ? parseInt(document.getElementById('releaseYear').value) : null,
+        genre:          document.getElementById('genre').value.trim(),
+        runtime:        document.getElementById('runtime').value ? parseInt(document.getElementById('runtime').value) : null,
+        watchStatus:    document.getElementById('watchStatus').value,
+        personalRating: document.getElementById('personalRating').value ? parseFloat(document.getElementById('personalRating').value) : null,
+        reviewNotes:    document.getElementById('reviewNotes').value.trim(),
+        imageUrl:       document.getElementById('imageUrl').value.trim()
+      };
+
+      try {
+        const result = await API.createMovie(data);
+        if (result.success) {
+          showAlert('Movie added successfully! Redirecting…', 'success');
+          setTimeout(() => { window.location.href = 'index.html'; }, 1200);
+        } else {
+          const msg = result.errors ? result.errors.join(', ') : (result.error || 'Failed to add movie');
+          showAlert(msg, 'error');
+          btn.disabled = false;
+          btn.textContent = 'Add Movie';
+        }
+      } catch (err) {
+        showAlert('Error: ' + err.message, 'error');
+        btn.disabled = false;
+        btn.textContent = 'Add Movie';
+      }
+    });
+
+    function showAlert(message, type) {
+      const c = document.getElementById('alertContainer');
+      c.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+      if (type === 'error') setTimeout(() => { c.innerHTML = ''; }, 6000);
+    }
+  </script>
+</body>
+</html>

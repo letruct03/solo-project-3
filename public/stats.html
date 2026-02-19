@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Statistics - Movie Collection Manager</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="header-brand">
+        <h1>📊 Collection Statistics</h1>
+      </div>
+      <nav>
+        <a href="index.html" class="btn btn-secondary">← Back to Collection</a>
+      </nav>
+    </header>
+
+    <div id="loadingIndicator" class="loading" style="display:none;">
+      <div class="spinner"></div>
+      <span>Loading statistics…</span>
+    </div>
+    <div id="errorContainer"></div>
+
+    <div class="stats-container" id="statsContainer" style="display:none;">
+
+      <!-- Overview -->
+      <section class="stats-section">
+        <h2>Overview</h2>
+        <div class="stats-grid">
+          <div class="stat-card stat-blue">
+            <div class="stat-value" id="totalMovies">0</div>
+            <div class="stat-label">Total Movies</div>
+          </div>
+          <div class="stat-card stat-green">
+            <div class="stat-value" id="completedMovies">0</div>
+            <div class="stat-label">Completed</div>
+          </div>
+          <div class="stat-card stat-orange">
+            <div class="stat-value" id="watchingMovies">0</div>
+            <div class="stat-label">Currently Watching</div>
+          </div>
+          <div class="stat-card stat-purple">
+            <div class="stat-value" id="wantToWatchMovies">0</div>
+            <div class="stat-label">Want to Watch</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Key Metrics -->
+      <section class="stats-section">
+        <h2>Key Metrics</h2>
+        <div class="stats-grid">
+          <div class="stat-card stat-yellow">
+            <div class="stat-value" id="avgRating">—</div>
+            <div class="stat-label">Avg Rating</div>
+          </div>
+          <div class="stat-card stat-teal">
+            <div class="stat-value" id="totalRuntime">0</div>
+            <div class="stat-label">Total Hours Watched</div>
+          </div>
+          <div class="stat-card stat-indigo">
+            <div class="stat-value" id="completionRate">0%</div>
+            <div class="stat-label">Completion Rate</div>
+          </div>
+          <div class="stat-card stat-pink">
+            <div class="stat-value" id="currentPageSize">—</div>
+            <div class="stat-label">Current Page Size</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Genre Breakdown -->
+      <section class="stats-section">
+        <h2>Genre Breakdown</h2>
+        <div id="genreBreakdown" class="breakdown-list"></div>
+      </section>
+
+      <!-- Year Distribution -->
+      <section class="stats-section">
+        <h2>Release Year Distribution</h2>
+        <div id="yearBreakdown" class="breakdown-list"></div>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', loadStats);
+
+    async function loadStats() {
+      const loader    = document.getElementById('loadingIndicator');
+      const container = document.getElementById('statsContainer');
+      loader.style.display = 'flex';
+
+      try {
+        const result = await API.getStats();
+        if (result.success) {
+          displayStats(result.data);
+          container.style.display = 'block';
+        } else {
+          showError('Failed to load statistics.');
+        }
+      } catch (err) {
+        showError('Error: ' + err.message);
+      } finally {
+        loader.style.display = 'none';
+      }
+    }
+
+    function displayStats(s) {
+      document.getElementById('totalMovies').textContent      = s.total;
+      document.getElementById('completedMovies').textContent  = s.completed;
+      document.getElementById('watchingMovies').textContent   = s.watching;
+      document.getElementById('wantToWatchMovies').textContent = s.wantToWatch;
+      document.getElementById('avgRating').textContent        = s.averageRating ? s.averageRating + '/10' : '—';
+      document.getElementById('totalRuntime').textContent     = Math.round((s.totalRuntime || 0) / 60) + 'h';
+      document.getElementById('completionRate').textContent   = s.total ? Math.round((s.completed / s.total) * 100) + '%' : '0%';
+
+      // Page size from cookie
+      const pageSize = Cookies.get('moviePageSize') || '10';
+      document.getElementById('currentPageSize').textContent = pageSize + ' / page';
+
+      // Genre breakdown
+      renderBreakdown('genreBreakdown', s.genreBreakdown, s.total, 'No genre data available');
+
+      // Year breakdown
+      renderBreakdown('yearBreakdown', s.yearBreakdown, s.total, 'No year data available');
+    }
+
+    function renderBreakdown(containerId, data, total, emptyMsg) {
+      const container = document.getElementById(containerId);
+      const entries = Object.entries(data || {}).sort((a, b) => b[1] - a[1]);
+
+      if (!entries.length) {
+        container.innerHTML = `<p class="empty-breakdown">${emptyMsg}</p>`;
+        return;
+      }
+
+      container.innerHTML = entries.map(([label, count]) => {
+        const pct = total ? ((count / total) * 100).toFixed(1) : 0;
+        return `
+          <div class="breakdown-item">
+            <div class="breakdown-info">
+              <span class="breakdown-label">${escapeHtml(label)}</span>
+              <span class="breakdown-count">${count} movie${count !== 1 ? 's' : ''} (${pct}%)</span>
+            </div>
+            <div class="breakdown-bar">
+              <div class="breakdown-bar-fill" style="width:${pct}%"></div>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    function showError(msg) {
+      document.getElementById('errorContainer').innerHTML =
+        `<div class="alert alert-error">${msg}</div>`;
+    }
+
+    function escapeHtml(t) {
+      if (!t && t !== 0) return '';
+      const d = document.createElement('div');
+      d.textContent = String(t);
+      return d.innerHTML;
+    }
+  </script>
+</body>
+</html>

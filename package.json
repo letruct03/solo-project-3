@@ -1,0 +1,12 @@
+{
+  "name": "movie-collection-manager",
+  "version": "3.0.0",
+  "description": "Solo Project 3 - Movie Collection Manager with PostgreSQL",
+  "private": true,
+  "dependencies": {
+    "pg": "^8.11.3"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

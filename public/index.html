@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Movie Collection Manager</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="header-brand">
+        <h1>🎬 My Movie Collection</h1>
+      </div>
+      <nav>
+        <a href="add.html" class="btn btn-primary">+ Add Movie</a>
+        <a href="stats.html" class="btn btn-secondary">📊 Stats</a>
+      </nav>
+    </header>
+
+    <!-- Toolbar: search + filters + sort + page size -->
+    <div class="toolbar">
+      <div class="toolbar-search">
+        <input type="text" id="searchInput" placeholder="🔍 Search title or director…" class="search-input">
+      </div>
+      <div class="toolbar-controls">
+        <select id="genreFilter" class="ctrl-select">
+          <option value="">All Genres</option>
+        </select>
+        <select id="statusFilter" class="ctrl-select">
+          <option value="">All Status</option>
+          <option value="Want to Watch">Want to Watch</option>
+          <option value="Watching">Watching</option>
+          <option value="Completed">Completed</option>
+        </select>
+        <select id="sortBySelect" class="ctrl-select">
+          <option value="dateAdded">Date Added</option>
+          <option value="title">Title</option>
+          <option value="releaseYear">Year</option>
+          <option value="personalRating">Rating</option>
+          <option value="runtime">Runtime</option>
+        </select>
+        <select id="sortDirSelect" class="ctrl-select">
+          <option value="desc">↓ Desc</option>
+          <option value="asc">↑ Asc</option>
+        </select>
+        <select id="pageSizeSelect" class="ctrl-select">
+          <option value="5">5 / page</option>
+          <option value="10" selected>10 / page</option>
+          <option value="20">20 / page</option>
+          <option value="50">50 / page</option>
+        </select>
+        <button id="clearFilters" class="btn btn-outline btn-small">✕ Clear</button>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div id="loadingIndicator" class="loading" style="display:none;">
+      <div class="spinner"></div>
+      <span>Loading movies…</span>
+    </div>
+
+    <!-- Error -->
+    <div id="errorContainer"></div>
+
+    <!-- Movies Grid -->
+    <div id="moviesGrid" class="movies-grid"></div>
+
+    <!-- Pagination -->
+    <div id="paginationControls" class="pagination-controls"></div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
