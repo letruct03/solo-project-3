@@ -1,99 +1,110 @@
-# DEPLOYMENT.md - Solo Project 3: Movie Collection Manager
+# Solo Project 3: Production Collection Manager
 
-## 🌐 Live Application
+## Live Application
 
-**URL:** https://your-domain.com  
-*(Replace with your actual custom domain after setup)*
-
----
-
-## 🏷 Domain
-
-- **Domain Name:** your-domain.com *(replace)*
-- **Registrar:** Namecheap / Google Domains / Cloudflare *(update with yours)*
-- **DNS / HTTPS:** Managed by Netlify (automatic Let's Encrypt SSL)
+**URL:** https://truc-movie-collection.netlify.app
 
 ---
 
-## 🖥 Hosting Provider
+## Domain
 
-**Netlify** — Static site hosting with serverless functions
+- **Domain Name:** truc-movie-collection.netlify.app
+- **Registrar:** Netlify free subdomain
+- **DNS / HTTPS:** Managed automatically by Netlify with Let's Encrypt SSL
 
-- Free tier supports custom domains, HTTPS, and serverless functions
+---
+
+## Hosting Provider
+
+**Netlify** — https://www.netlify.com
+
+- Free tier used (no credit card required)
 - Frontend static files served from the `public/` directory
-- Backend logic runs as Netlify Functions (Node.js)
+- Backend API runs as a Netlify Serverless Function (Node.js 18)
+- Auto-deploys on every push to the `main` branch on GitHub
+- HTTPS is provisioned automatically via Let's Encrypt
 
 ---
 
-## 🛠 Tech Stack
+## Tech Stack
 
-| Layer     | Technology                        |
-|-----------|-----------------------------------|
-| Frontend  | HTML5, CSS3, Vanilla JavaScript   |
-| Backend   | Node.js (Netlify Serverless Functions) |
-| Database  | PostgreSQL (hosted on Neon)       |
-| Hosting   | Netlify                           |
-| Domain    | Custom domain via registrar       |
+| Layer      | Technology                              |
+|------------|-----------------------------------------|
+| Frontend   | HTML5, CSS3, Vanilla JavaScript (ES6+)  |
+| Backend    | Node.js 18 (Netlify Serverless Function)|
+| Database   | PostgreSQL (hosted on Neon)             |
+| Hosting    | Netlify                                 |
+| Domain/DNS | Netlify (or custom registrar)           |
 
 ---
 
-## 🗄 Database
+## Database
 
 - **Type:** PostgreSQL
-- **Provider:** [Neon](https://neon.tech) (serverless Postgres — free tier)
-- **Schema:** Single `movies` table (auto-created on first request)
-- **Seed data:** 30 movies inserted automatically when the table is empty
+- **Provider:** Neon (https://neon.tech) — serverless Postgres, free tier
+- **Connection:** Via `DATABASE_URL` environment variable
+- **Schema:** Auto-created on first request if it does not exist
+- **Seed data:** 30 movies inserted automatically when the table is empty; duplicate-safe via `ON CONFLICT (title) DO NOTHING`
 
 ### Schema
 
 ```sql
-CREATE TABLE movies (
-  id             SERIAL PRIMARY KEY,
-  title          VARCHAR(255) NOT NULL,
-  director       VARCHAR(255),
-  release_year   INT CHECK (release_year BETWEEN 1888 AND 2030),
-  genre          VARCHAR(100),
-  runtime        INT CHECK (runtime > 0),
-  watch_status   VARCHAR(50) DEFAULT 'Want to Watch',
+CREATE TABLE IF NOT EXISTS movies (
+  id              SERIAL PRIMARY KEY,
+  title           VARCHAR(255) NOT NULL,
+  director        VARCHAR(255),
+  release_year    INT CHECK (release_year BETWEEN 1888 AND 2030),
+  genre           VARCHAR(100),
+  runtime         INT CHECK (runtime > 0),
+  watch_status    VARCHAR(50) DEFAULT 'Want to Watch',
   personal_rating NUMERIC(3,1) CHECK (personal_rating BETWEEN 0 AND 10),
-  review_notes   TEXT,
-  image_url      TEXT,
-  date_added     TIMESTAMPTZ DEFAULT NOW()
+  review_notes    TEXT,
+  image_url       TEXT,
+  date_added      TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT movies_title_unique UNIQUE (title)
 );
 ```
 
 ---
 
-## 🔐 Configuration & Secrets
+## Configuration & Secrets
 
-All secrets are stored as **Netlify Environment Variables** — never committed to Git.
+All secrets are stored as **Netlify Environment Variables** and are never committed to Git.
 
 ### Required Environment Variable
 
-| Variable       | Description                                  |
-|----------------|----------------------------------------------|
-| `DATABASE_URL` | PostgreSQL connection string from Neon       |
+| Variable       | Description                                      |
+|----------------|--------------------------------------------------|
+| `DATABASE_URL` | PostgreSQL connection string provided by Neon    |
 
 ### How to set in Netlify
 
-1. Go to **Site Settings → Environment Variables**
-2. Add `DATABASE_URL` = your Neon connection string (looks like `postgresql://user:pass@ep-xxx.neon.tech/neondb?sslmode=require`)
+1. Go to your Netlify site → **Site configuration → Environment variables**
+2. Click **Add a variable**
+3. Key: `DATABASE_URL`
+4. Value: your Neon connection string, which looks like:
+   ```
+   postgresql://user:password@ep-something.us-east-2.aws.neon.tech/neondb?sslmode=require
+   ```
+5. Save, then trigger a new deploy for the variable to take effect
 
 ---
 
-## 🚀 How to Deploy
+## How to Deploy
 
 ### First-time setup
 
-1. **Create a Neon account** at https://neon.tech and create a new project
-2. Copy the connection string from your Neon dashboard
-3. **Push repo to GitHub**
-4. **Connect GitHub repo to Netlify** (New site → Import from Git)
-5. Set `DATABASE_URL` environment variable in Netlify site settings
-6. Deploy — Netlify runs `npm install` (installs `pg` package), then serves the site
-7. **Add custom domain** in Netlify → Domain Management → Add custom domain
-8. Point your domain's DNS to Netlify nameservers (Netlify provides these)
-9. HTTPS is enabled automatically via Let's Encrypt
+1. **Create a Neon account** at https://neon.tech
+2. Create a new project, then copy the connection string from the dashboard
+3. **Push this repo to GitHub**
+4. Go to https://app.netlify.com → **Add new site → Import from Git → GitHub**
+5. Select this repository
+6. Netlify auto-detects settings from `netlify.toml`:
+   - Build command: `npm install`
+   - Publish directory: `public`
+7. Before deploying, add `DATABASE_URL` under **Environment variables**
+8. Click **Deploy site** — build completes in ~30 seconds
+9. The database schema and 30 seed movies are created automatically on the first request
 
 ### Updating the app
 
@@ -103,45 +114,6 @@ git commit -m "Your message"
 git push origin main
 ```
 
-Netlify auto-deploys on every push to `main`.
+Netlify auto-deploys on every push to `main`. Deploys typically complete in under 60 seconds.
 
 ---
-
-## 📂 Project Structure
-
-```
-├── netlify.toml              # Netlify config (build, functions, redirects)
-├── package.json              # Node dependencies (pg)
-├── DEPLOYMENT.md             # This file
-├── public/                   # Static frontend (served by Netlify)
-│   ├── index.html            # Movie list: search, filter, sort, pagination
-│   ├── add.html              # Add new movie form
-│   ├── edit.html             # Edit existing movie form
-│   ├── stats.html            # Collection statistics
-│   ├── css/style.css         # All styles
-│   └── js/
-│       ├── api.js            # Frontend API service + cookie helpers
-│       └── app.js            # Main app logic (state, rendering, pagination)
-└── netlify/
-    └── functions/
-        └── api.js            # Serverless backend: all CRUD + stats endpoints
-```
-
----
-
-## ✅ Feature Checklist
-
-- [x] Full CRUD persisted to PostgreSQL
-- [x] 30+ seeded records
-- [x] Search by title / director
-- [x] Filter by genre and watch status
-- [x] Sorting by title, year, rating, runtime, date added
-- [x] Pagination with configurable page size (5 / 10 / 20 / 50)
-- [x] Page size saved in cookie and restored on reload
-- [x] Image per record with broken-image placeholder
-- [x] Stats view: total records, current page size, avg rating, completion rate
-- [x] Delete confirmation dialog
-- [x] HTTPS via Netlify / Let's Encrypt
-- [x] Custom domain
-- [x] Secrets via environment variables (no passwords in Git)
-- [x] Responsive design (mobile + desktop)
