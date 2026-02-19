@@ -53,8 +53,19 @@ async function initDB() {
       personal_rating NUMERIC(3,1) CHECK (personal_rating BETWEEN 0 AND 10),
       review_notes TEXT,
       image_url  TEXT,
-      date_added TIMESTAMPTZ DEFAULT NOW()
+      date_added TIMESTAMPTZ DEFAULT NOW(),
+      CONSTRAINT movies_title_unique UNIQUE (title)
     )
+  `);
+  // Add unique constraint to existing tables that were created without it
+  await query(`
+    DO $$ BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'movies_title_unique'
+      ) THEN
+        ALTER TABLE movies ADD CONSTRAINT movies_title_unique UNIQUE (title);
+      END IF;
+    END $$;
   `);
 
   // Seed only if empty
@@ -96,7 +107,8 @@ async function initDB() {
     for (const row of seed) {
       await query(
         `INSERT INTO movies (title, director, release_year, genre, runtime, watch_status, personal_rating, review_notes, image_url)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+         ON CONFLICT (title) DO NOTHING`,
         row
       );
     }
