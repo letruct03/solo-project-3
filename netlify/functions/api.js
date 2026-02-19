@@ -4,6 +4,9 @@
 
 const { Client } = require('pg');
 
+// Module-level flag — only initialize DB schema+seed once per cold start
+let dbInitialized = false;
+
 // CORS headers
 const HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -12,10 +15,12 @@ const HEADERS = {
   'Content-Type': 'application/json'
 };
 
-// Create DB client from env var
+// Create DB client — use verify-full to match pg v8 actual behavior and silence warning
 function getClient() {
+  // Replace sslmode=require with sslmode=verify-full in the connection string
+  const connStr = (process.env.DATABASE_URL || '').replace('sslmode=require', 'sslmode=verify-full');
   return new Client({
-    connectionString: process.env.DATABASE_URL,
+    connectionString: connStr,
     ssl: { rejectUnauthorized: false }
   });
 }
@@ -32,8 +37,10 @@ async function query(sql, params = []) {
   }
 }
 
-// Initialize DB schema + seed data on cold start
+// Initialize DB schema + seed data — only runs once per Lambda cold start
 async function initDB() {
+  if (dbInitialized) return;
+
   await query(`
     CREATE TABLE IF NOT EXISTS movies (
       id         SERIAL PRIMARY KEY,
@@ -94,6 +101,7 @@ async function initDB() {
       );
     }
   }
+  dbInitialized = true;
 }
 
 // Validate movie input
