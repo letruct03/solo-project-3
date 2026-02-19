@@ -141,9 +141,15 @@ exports.handler = async (event) => {
     await initDB();
 
     const method = event.httpMethod;
-    const rawPath = event.queryStringParameters?.path || '';
-    const parts = rawPath.split('/').filter(Boolean);
     const qs = event.queryStringParameters || {};
+
+    // Derive path from event.path, stripping function/api prefixes
+    // Works with both direct function calls and /api/* redirects
+    const rawPath = (event.path || '')
+      .replace('/.netlify/functions/api', '')
+      .replace(/^\/api/, '')
+      .replace(/^\/+/, '');
+    const parts = rawPath.split('/').filter(Boolean);
 
     // ── GET /api/movies ──────────────────────────────────────────────────────
     if (method === 'GET' && parts[0] === 'movies' && !parts[1]) {
